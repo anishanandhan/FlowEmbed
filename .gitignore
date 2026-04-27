@@ -1,0 +1,28 @@
+# Environments
+venv/
+.env
+
+# Data and models
+data/raw/*
+data/processed/*
+data/splits/*
+data/checkpoints/*
+
+# Only ignore contents, keep the folder structure
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/splits/.gitkeep
+!data/checkpoints/.gitkeep
+
+# Models
+*.pt
+*.pth
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# OS
+.DS_Store

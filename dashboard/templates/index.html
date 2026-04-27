@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowEmbed — 5G/6G Traffic Classifier Dashboard</title>
+    <meta name="description" content="Real-time network traffic classification dashboard for 5G/6G infrastructure using contrastive learning embeddings">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-left">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 32 32" fill="none">
+                        <circle cx="16" cy="16" r="14" stroke="url(#grad1)" stroke-width="2.5"/>
+                        <circle cx="10" cy="12" r="3" fill="#6366f1"/>
+                        <circle cx="22" cy="12" r="3" fill="#06b6d4"/>
+                        <circle cx="16" cy="22" r="3" fill="#f472b6"/>
+                        <circle cx="16" cy="16" r="2" fill="#a78bfa" opacity="0.6"/>
+                        <line x1="10" y1="12" x2="16" y2="16" stroke="#6366f1" stroke-width="1" opacity="0.5"/>
+                        <line x1="22" y1="12" x2="16" y2="16" stroke="#06b6d4" stroke-width="1" opacity="0.5"/>
+                        <line x1="16" y1="22" x2="16" y2="16" stroke="#f472b6" stroke-width="1" opacity="0.5"/>
+                        <defs><linearGradient id="grad1" x1="0" y1="0" x2="32" y2="32">
+                            <stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#06b6d4"/>
+                        </linearGradient></defs>
+                    </svg>
+                </div>
+                <div>
+                    <h1>FlowEmbed</h1>
+                    <span class="subtitle">5G/6G Intelligent Traffic Classification</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="badge badge-live"><span class="pulse"></span> System Online</div>
+            <div class="badge badge-info">Samsung Ennovatex AX · PS02</div>
+        </div>
+    </header>
+
+    <!-- KPI Cards -->
+    <section class="kpi-section" id="kpi-section">
+        <div class="kpi-card" id="kpi-intra">
+            <div class="kpi-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="8" stroke-dasharray="4 3"/></svg>
+            </div>
+            <div class="kpi-content">
+                <span class="kpi-label">Intra-class Cosine</span>
+                <span class="kpi-value" id="val-intra">—</span>
+                <span class="kpi-target">Target: &gt; 0.7</span>
+            </div>
+            <div class="kpi-status" id="status-intra"></div>
+        </div>
+        <div class="kpi-card" id="kpi-inter">
+            <div class="kpi-icon" style="background: linear-gradient(135deg, #06b6d4, #0ea5e9)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="8" cy="12" r="4"/><circle cx="16" cy="12" r="4"/><line x1="12" y1="8" x2="12" y2="16" stroke-dasharray="2 2"/></svg>
+            </div>
+            <div class="kpi-content">
+                <span class="kpi-label">Inter-class Cosine</span>
+                <span class="kpi-value" id="val-inter">—</span>
+                <span class="kpi-target">Target: &lt; 0.3</span>
+            </div>
+            <div class="kpi-status" id="status-inter"></div>
+        </div>
+        <div class="kpi-card" id="kpi-acc">
+            <div class="kpi-icon" style="background: linear-gradient(135deg, #10b981, #059669)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            </div>
+            <div class="kpi-content">
+                <span class="kpi-label">Classification Accuracy</span>
+                <span class="kpi-value" id="val-acc">—</span>
+                <span class="kpi-target">Target: ≥ 90%</span>
+            </div>
+            <div class="kpi-status" id="status-acc"></div>
+        </div>
+        <div class="kpi-card" id="kpi-lat">
+            <div class="kpi-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+            </div>
+            <div class="kpi-content">
+                <span class="kpi-label">Encoder Latency</span>
+                <span class="kpi-value" id="val-lat">—</span>
+                <span class="kpi-target">Target: &lt; 100ms</span>
+            </div>
+            <div class="kpi-status" id="status-lat"></div>
+        </div>
+    </section>
+
+    <!-- Main Grid -->
+    <section class="main-grid">
+        <!-- UMAP Embedding Plot -->
+        <div class="card card-wide" id="umap-card">
+            <div class="card-header">
+                <h2>Embedding Space (UMAP Projection)</h2>
+                <span class="card-badge">Interactive</span>
+            </div>
+            <div id="umap-plot" class="plot-container"></div>
+        </div>
+
+        <!-- Live Classification -->
+        <div class="card" id="live-card">
+            <div class="card-header">
+                <h2>Live Classification</h2>
+                <span class="card-badge badge-live"><span class="pulse"></span> Real-time</span>
+            </div>
+            <div class="live-section">
+                <button id="classify-btn" class="btn-classify" onclick="classifyFlow()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    Classify Random Flow
+                </button>
+                <div id="live-result" class="live-result hidden">
+                    <div class="result-header">
+                        <span id="result-status" class="result-badge"></span>
+                        <span id="result-latency" class="result-latency"></span>
+                    </div>
+                    <div class="result-labels">
+                        <div class="result-label-item">
+                            <span class="label-type">True</span>
+                            <span id="result-true" class="label-value"></span>
+                        </div>
+                        <div class="result-arrow">→</div>
+                        <div class="result-label-item">
+                            <span class="label-type">Predicted</span>
+                            <span id="result-pred" class="label-value"></span>
+                        </div>
+                    </div>
+                    <div class="confidence-bars" id="confidence-bars"></div>
+                </div>
+                <div id="live-history" class="live-history"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bottom Grid -->
+    <section class="bottom-grid">
+        <!-- Per-Class Performance -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Per-Class Performance</h2>
+            </div>
+            <div id="perf-chart" class="plot-container"></div>
+        </div>
+
+        <!-- Confusion Matrix -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Confusion Matrix</h2>
+            </div>
+            <div id="confusion-matrix" class="plot-container"></div>
+        </div>
+    </section>
+
+    <!-- Full-Width System Architecture -->
+    <section class="arch-section">
+        <div class="card">
+            <div class="card-header">
+                <h2>Complete System Architecture</h2>
+                <span class="card-badge">5-Stage Pipeline</span>
+            </div>
+
+            <!-- Stage Pipeline -->
+            <div class="pipeline">
+                <!-- Stage 1: Data Pipeline -->
+                <div class="stage">
+                    <div class="stage-header stage-color-1">
+                        <span class="stage-number">01</span>
+                        <span class="stage-icon">📡</span>
+                        <h3>Data Pipeline</h3>
+                    </div>
+                    <div class="stage-body">
+                        <div class="stage-item">
+                            <span class="item-label">Source</span>
+                            <span class="item-value">CESNET-QUIC22 & Samsung S23 (140k+ flows)</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Capture</span>
+                            <span class="item-value">NFStream (C-based zero-copy packet parser)</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Aggregation</span>
+                            <span class="item-value">Per-flow feature extraction (5-tuple)</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Features</span>
+                            <span class="item-value">60 statistical features (sizes, IATs, flags, protocols)</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Normalization</span>
+                            <span class="item-value">StandardScaler + robust outlier handling</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Split</span>
+                            <span class="item-value">70/15/15 stratified train/val/test</span>
+                        </div>
+                        <div class="stage-tech">
+                            <span class="tech-pill">Python</span>
+                            <span class="tech-pill">NFStream</span>
+                            <span class="tech-pill">Pandas</span>
+                            <span class="tech-pill">scikit-learn</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pipeline-connector">
+                    <div class="connector-line"></div>
+                    <div class="connector-dot"></div>
+                </div>
+
+                <!-- Stage 2: Model Training -->
+                <div class="stage">
+                    <div class="stage-header stage-color-2">
+                        <span class="stage-number">02</span>
+                        <span class="stage-icon">🧠</span>
+                        <h3>Model Training</h3>
+                    </div>
+                    <div class="stage-body">
+                        <div class="stage-item">
+                            <span class="item-label">Encoder</span>
+                            <span class="item-value">3-layer MLP (BatchNorm + GELU + Skip)</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Embedding</span>
+                            <span class="item-value" id="arch-dim2">48-dim L2-normalized</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Loss 1</span>
+                            <span class="item-value loss-highlight-1">CenterLoss → Intra-class compactness</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Loss 2</span>
+                            <span class="item-value loss-highlight-2">CentroidRepulsionLoss → Inter-class separation (Novel)</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Loss 3</span>
+                            <span class="item-value loss-highlight-3">CrossEntropy → Classification accuracy</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Sampling</span>
+                            <span class="item-value">WeightedRandomSampler (class-balanced)</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Optimizer</span>
+                            <span class="item-value">AdamW + Cosine Annealing + Warmup</span>
+                        </div>
+                        <div class="stage-tech">
+                            <span class="tech-pill">PyTorch</span>
+                            <span class="tech-pill">FAISS</span>
+                            <span class="tech-pill">NumPy</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pipeline-connector">
+                    <div class="connector-line"></div>
+                    <div class="connector-dot"></div>
+                </div>
+
+                <!-- Stage 3: Adaptive Layer -->
+                <div class="stage">
+                    <div class="stage-header stage-color-3">
+                        <span class="stage-number">03</span>
+                        <span class="stage-icon">🔄</span>
+                        <h3>Adaptive Layer</h3>
+                    </div>
+                    <div class="stage-body">
+                        <div class="stage-item">
+                            <span class="item-label">k-NN Index</span>
+                            <span class="item-value">FAISS IndexFlatIP (cosine similarity)</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Online Update</span>
+                            <span class="item-value">Sliding-window centroid drift detection</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Augmentation</span>
+                            <span class="item-value">Noise injection + feature masking + jitter</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Dual Classifier</span>
+                            <span class="item-value">CE Head (fast) + k-NN (robust) ensemble</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Drift Detection</span>
+                            <span class="item-value">Cosine distance from class centroids</span>
+                        </div>
+                        <div class="stage-tech">
+                            <span class="tech-pill">FAISS</span>
+                            <span class="tech-pill">PyTorch</span>
+                            <span class="tech-pill">scikit-learn</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pipeline-connector">
+                    <div class="connector-line"></div>
+                    <div class="connector-dot"></div>
+                </div>
+
+                <!-- Stage 4: Explainability -->
+                <div class="stage">
+                    <div class="stage-header stage-color-4">
+                        <span class="stage-number">04</span>
+                        <span class="stage-icon">🔍</span>
+                        <h3>Explainability</h3>
+                    </div>
+                    <div class="stage-body">
+                        <div class="stage-item">
+                            <span class="item-label">Visualization</span>
+                            <span class="item-value">UMAP 2D embedding projection</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Metrics</span>
+                            <span class="item-value">Intra/Inter cosine, per-class F1, confusion matrix</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Cluster Quality</span>
+                            <span class="item-value">Centroid distance analysis per class</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Confidence</span>
+                            <span class="item-value">Softmax probability distribution per prediction</span>
+                        </div>
+                        <div class="stage-tech">
+                            <span class="tech-pill">UMAP</span>
+                            <span class="tech-pill">Plotly.js</span>
+                            <span class="tech-pill">scikit-learn</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pipeline-connector">
+                    <div class="connector-line"></div>
+                    <div class="connector-dot"></div>
+                </div>
+
+                <!-- Stage 5: Dashboard -->
+                <div class="stage">
+                    <div class="stage-header stage-color-5">
+                        <span class="stage-number">05</span>
+                        <span class="stage-icon">📊</span>
+                        <h3>Dashboard</h3>
+                    </div>
+                    <div class="stage-body">
+                        <div class="stage-item">
+                            <span class="item-label">Backend</span>
+                            <span class="item-value">Flask REST API (JSON endpoints)</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Frontend</span>
+                            <span class="item-value">Vanilla HTML/CSS/JS (dark glassmorphism)</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Charts</span>
+                            <span class="item-value">Plotly.js interactive scatter, bar, heatmap</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">Live Inference</span>
+                            <span class="item-value">Real-time flow classification via POST API</span>
+                        </div>
+                        <div class="stage-item">
+                            <span class="item-label">KPI Monitor</span>
+                            <span class="item-value">4 KPI cards with pass/fail indicators</span>
+                        </div>
+                        <div class="stage-tech">
+                            <span class="tech-pill">Flask</span>
+                            <span class="tech-pill">Plotly.js</span>
+                            <span class="tech-pill">HTML/CSS/JS</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Architecture Stats -->
+            <div class="arch-stats" id="arch-stats"></div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <span>FlowEmbed — Samsung Ennovatex AX Hackathon · PS02 · Transformer-Based Network Traffic Classifier</span>
+    </footer>
+
+    <script>
+    // ── Color Palette ──
+    const COLORS = {
+        gaming: '#6366f1',
+        streaming: '#06b6d4',
+        voip: '#f472b6',
+        xr_ar: '#f59e0b',
+    };
+    const CLASS_ICONS = { gaming: '🎮', streaming: '📺', voip: '📞', xr_ar: '🥽' };
+
+    let classifyCount = 0;
+    let correctCount = 0;
+
+    // ── Load KPIs ──
+    async function loadKPIs() {
+        const res = await fetch('/api/kpis');
+        const d = await res.json();
+
+        animateValue('val-intra', d.intra_cosine.toFixed(4));
+        animateValue('val-inter', d.inter_cosine.toFixed(4));
+        animateValue('val-acc', (d.accuracy * 100).toFixed(2) + '%');
+        animateValue('val-lat', d.latency_ms.toFixed(2) + 'ms');
+
+        setStatus('status-intra', 'kpi-intra', d.intra_cosine > d.targets.intra);
+        setStatus('status-inter', 'kpi-inter', d.inter_cosine < d.targets.inter);
+        setStatus('status-acc', 'kpi-acc', d.accuracy >= d.targets.accuracy);
+        setStatus('status-lat', 'kpi-lat', d.latency_ms < d.targets.latency);
+    }
+
+    function animateValue(id, value) {
+        const el = document.getElementById(id);
+        el.textContent = value;
+        el.classList.add('animate-in');
+        setTimeout(() => el.classList.remove('animate-in'), 600);
+    }
+
+    function setStatus(statusId, cardId, pass) {
+        const el = document.getElementById(statusId);
+        const card = document.getElementById(cardId);
+        el.textContent = pass ? '✅ PASS' : '❌ FAIL';
+        el.className = 'kpi-status ' + (pass ? 'pass' : 'fail');
+        if (pass) card.classList.add('kpi-pass');
+    }
+
+    // ── Load UMAP ──
+    async function loadUMAP() {
+        const res = await fetch('/api/embeddings');
+        const data = await res.json();
+
+        const traces = {};
+        data.forEach(d => {
+            if (!traces[d.label]) traces[d.label] = { x: [], y: [], text: [], marker: { color: [], size: [] } };
+            traces[d.label].x.push(d.x);
+            traces[d.label].y.push(d.y);
+            traces[d.label].text.push(`${CLASS_ICONS[d.label]} ${d.label}<br>Pred: ${d.pred}<br>${d.correct ? '✅ Correct' : '❌ Wrong'}`);
+            traces[d.label].marker.color.push(d.correct ? COLORS[d.label] : '#ef4444');
+            traces[d.label].marker.size.push(d.correct ? 6 : 9);
+        });
+
+        const plotData = Object.entries(traces).map(([label, t]) => ({
+            x: t.x, y: t.y, text: t.text,
+            mode: 'markers',
+            type: 'scatter',
+            name: `${CLASS_ICONS[label]} ${label}`,
+            marker: { color: t.marker.color, size: t.marker.size, opacity: 0.8, line: { width: 0.5, color: 'rgba(255,255,255,0.2)' } },
+            hovertemplate: '%{text}<extra></extra>',
+        }));
+
+        Plotly.newPlot('umap-plot', plotData, {
+            paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+            font: { family: 'Inter', color: '#94a3b8', size: 11 },
+            legend: { orientation: 'h', y: -0.15, font: { size: 13 } },
+            xaxis: { showgrid: false, zeroline: false, showticklabels: false, title: '' },
+            yaxis: { showgrid: false, zeroline: false, showticklabels: false, title: '' },
+            margin: { t: 10, b: 50, l: 10, r: 10 },
+            hoverlabel: { bgcolor: '#1e293b', bordercolor: '#334155', font: { family: 'Inter', size: 12, color: '#f1f5f9' } },
+        }, { responsive: true, displayModeBar: false });
+    }
+
+    // ── Load Performance ──
+    async function loadPerformance() {
+        const res = await fetch('/api/performance');
+        const d = await res.json();
+
+        // Bar chart
+        const metrics = ['precision', 'recall', 'f1'];
+        const barTraces = metrics.map(m => ({
+            x: d.per_class.map(c => `${CLASS_ICONS[c.class]} ${c.class}`),
+            y: d.per_class.map(c => c[m]),
+            name: m.charAt(0).toUpperCase() + m.slice(1),
+            type: 'bar',
+            marker: { color: m === 'precision' ? '#6366f1' : m === 'recall' ? '#06b6d4' : '#10b981', opacity: 0.85 },
+        }));
+
+        Plotly.newPlot('perf-chart', barTraces, {
+            paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+            font: { family: 'Inter', color: '#94a3b8', size: 11 },
+            barmode: 'group',
+            yaxis: { range: [0, 1.05], gridcolor: 'rgba(148,163,184,0.1)', title: '' },
+            xaxis: { title: '' },
+            legend: { orientation: 'h', y: -0.2, font: { size: 12 } },
+            margin: { t: 10, b: 60, l: 40, r: 10 },
+        }, { responsive: true, displayModeBar: false });
+
+        // Confusion matrix
+        const cm = d.confusion_matrix;
+        const labels = d.label_names.map(n => `${CLASS_ICONS[n]} ${n}`);
+        Plotly.newPlot('confusion-matrix', [{
+            z: cm, x: labels, y: labels,
+            type: 'heatmap',
+            colorscale: [[0, '#0f172a'], [0.5, '#312e81'], [1, '#6366f1']],
+            showscale: false,
+            text: cm.map(row => row.map(v => v.toString())),
+            texttemplate: '%{text}',
+            textfont: { color: '#f1f5f9', size: 14, family: 'JetBrains Mono' },
+            hovertemplate: 'True: %{y}<br>Pred: %{x}<br>Count: %{z}<extra></extra>',
+        }], {
+            paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+            font: { family: 'Inter', color: '#94a3b8', size: 11 },
+            xaxis: { title: 'Predicted', side: 'bottom' },
+            yaxis: { title: 'True', autorange: 'reversed' },
+            margin: { t: 10, b: 60, l: 80, r: 10 },
+        }, { responsive: true, displayModeBar: false });
+    }
+
+    // ── Live Classification ──
+    async function classifyFlow() {
+        const btn = document.getElementById('classify-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Classifying...';
+
+        const res = await fetch('/api/classify', { method: 'POST' });
+        const d = await res.json();
+        classifyCount++;
+        if (d.correct) correctCount++;
+
+        const result = document.getElementById('live-result');
+        result.classList.remove('hidden');
+
+        document.getElementById('result-status').textContent = d.correct ? '✅ Correct' : '❌ Misclassified';
+        document.getElementById('result-status').className = 'result-badge ' + (d.correct ? 'correct' : 'wrong');
+        document.getElementById('result-latency').textContent = `${d.latency_ms}ms`;
+        document.getElementById('result-true').textContent = `${CLASS_ICONS[d.true_label]} ${d.true_label}`;
+        document.getElementById('result-pred').textContent = `${CLASS_ICONS[d.predicted_label]} ${d.predicted_label}`;
+
+        // Confidence bars
+        const barsEl = document.getElementById('confidence-bars');
+        barsEl.innerHTML = '';
+        Object.entries(d.probabilities).sort((a, b) => b[1] - a[1]).forEach(([cls, prob]) => {
+            const isPred = cls === d.predicted_label;
+            barsEl.innerHTML += `
+                <div class="conf-bar-row ${isPred ? 'conf-primary' : ''}">
+                    <span class="conf-label">${CLASS_ICONS[cls]} ${cls}</span>
+                    <div class="conf-bar-track">
+                        <div class="conf-bar-fill" style="width: ${prob}%; background: ${COLORS[cls]}"></div>
+                    </div>
+                    <span class="conf-value">${prob.toFixed(1)}%</span>
+                </div>`;
+        });
+
+        // History
+        const hist = document.getElementById('live-history');
+        const entry = document.createElement('div');
+        entry.className = `history-entry ${d.correct ? 'hist-correct' : 'hist-wrong'}`;
+        entry.innerHTML = `<span>${CLASS_ICONS[d.true_label]} ${d.true_label}</span><span>→</span><span>${CLASS_ICONS[d.predicted_label]} ${d.predicted_label}</span><span class="hist-conf">${d.confidence}%</span>`;
+        hist.insertBefore(entry, hist.firstChild);
+        if (hist.children.length > 8) hist.removeChild(hist.lastChild);
+
+        btn.disabled = false;
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"><polygon points="5 3 19 12 5 21 5 3"/></svg> Classify (${correctCount}/${classifyCount} correct)`;
+    }
+
+    // ── Load Stats ──
+    async function loadStats() {
+        const res = await fetch('/api/stats');
+        const d = await res.json();
+        const dim2El = document.getElementById('arch-dim2');
+        if (dim2El) dim2El.textContent = `${d.embedding_dim}-dim L2-normalized`;
+        document.getElementById('arch-stats').innerHTML = `
+            <div class="stat-pill">📦 Train: ${d.train_samples.toLocaleString()} samples</div>
+            <div class="stat-pill">🧪 Test: ${d.test_samples.toLocaleString()} samples</div>
+            <div class="stat-pill">📐 ${d.input_features} input features</div>
+            <div class="stat-pill">🧠 ~${(d.model_params/1000).toFixed(1)}K parameters</div>
+            ${Object.entries(d.class_distribution).map(([c, n]) => `<div class="stat-pill">${CLASS_ICONS[c]} ${c}: ${n}</div>`).join('')}
+        `;
+    }
+
+    // ── Initialize ──
+    Promise.all([loadKPIs(), loadUMAP(), loadPerformance(), loadStats()]);
+    </script>
+</body>
+</html>
