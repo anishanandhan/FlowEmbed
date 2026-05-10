@@ -75,8 +75,8 @@ def compute_metrics(embeddings_np, labels_np):
 def train():
     embed_dim = 48
     lr = 1e-3
-    epochs = 100
-    batch_size = 64
+    epochs = 50
+    batch_size = 512
 
     # Loss weights for clean presentation dataset
     w_center = 1.0        # Force tight clusters (Intra > 0.7)
@@ -110,14 +110,12 @@ def train():
     train_ds = ContrastiveFlowDataset(X_train, y_train, augmentor=train_aug)
     val_ds = ContrastiveFlowDataset(X_val, y_val, augmentor=val_aug)
 
-    # Class-balanced sampling
+    # Data already balanced by merge_datasets.py — use simple shuffle
     class_counts = np.bincount(y_train)
     class_weights = 1.0 / class_counts
-    sample_weights = class_weights[y_train]
-    sampler = WeightedRandomSampler(sample_weights, len(sample_weights), replacement=True)
     logger.info(f"  Class counts: {dict(enumerate(class_counts))}")
 
-    train_loader = DataLoader(train_ds, batch_size=batch_size, sampler=sampler, drop_last=True)
+    train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_ds, batch_size=batch_size, shuffle=False)
 
     # Model (encoder only — no need for projection head)
@@ -128,8 +126,7 @@ def train():
     center_loss_fn = CenterLoss(num_classes=num_classes, embedding_dim=embed_dim).to(DEVICE)
     repulsion_loss_fn = CentroidRepulsionLoss(margin=repulsion_margin).to(DEVICE)
     ce_head = nn.Linear(embed_dim, num_classes).to(DEVICE)
-    ce_class_w = torch.FloatTensor(class_weights / class_weights.min()).to(DEVICE)
-    ce_loss_fn = nn.CrossEntropyLoss(weight=ce_class_w)
+    ce_loss_fn = nn.CrossEntropyLoss()
 
     if USE_PML:
         logger.info("  🔥 Hard Negative Mining enabled (pytorch-metric-learning)")

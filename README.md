@@ -93,7 +93,7 @@ python dashboard/app.py
 |-------|-----------|
 | Data Pipeline | NFStream (C-based), pandas, NumPy, tcpreplay |
 | Model Training | PyTorch, CenterLoss, CentroidRepulsionLoss, CrossEntropy |
-| Classification | FAISS (IndexFlatIP), scikit-learn |
+| Classification | FAISS (IndexIVFFlat), scikit-learn |
 | Drift Detection | River (ADWIN algorithm) |
 | Explainability | Local LLM via Ollama API |
 | Backend & UI | Flask, HTML/JS, UMAP |

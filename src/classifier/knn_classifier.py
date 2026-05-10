@@ -39,8 +39,9 @@ class FAISSKNNClassifier:
         self.embedding_dim = embedding_dim
         self.weighted = weighted
 
-        # FAISS IndexFlatIP (inner product = cosine similarity on normalized vectors)
-        self.index = faiss.IndexFlatIP(embedding_dim)
+        # FAISS IndexIVFFlat (Production-ready inverted file index)
+        quantizer = faiss.IndexFlatIP(embedding_dim)
+        self.index = faiss.IndexIVFFlat(quantizer, embedding_dim, 10, faiss.METRIC_INNER_PRODUCT)
         self.labels = np.array([], dtype=np.int64)
         self.embeddings = np.array([]).reshape(0, embedding_dim)
 
@@ -57,15 +58,17 @@ class FAISSKNNClassifier:
         embeddings = embeddings / (norms + 1e-8)
         embeddings = embeddings.astype(np.float32)
 
-        # Exact search (IndexFlatIP) is used for deterministic accuracy.
-        # Note: For production scale to 10M+ flows, switch to IndexIVFFlat if OpenMP is supported.
-        self.index = faiss.IndexFlatIP(self.embedding_dim)
+        # Switch to IndexIVFFlat for production scale
+        quantizer = faiss.IndexFlatIP(self.embedding_dim)
+        self.index = faiss.IndexIVFFlat(quantizer, self.embedding_dim, 10, faiss.METRIC_INNER_PRODUCT)
+        self.index.train(embeddings)
         self.index.add(embeddings)
+        self.index.nprobe = 3
 
         self.labels = np.array(labels, dtype=np.int64)
         self.embeddings = embeddings
 
-        logger.info(f"Built FAISS IndexFlatIP with {len(labels)} embeddings, k={self.k}")
+        logger.info(f"Built FAISS IndexIVFFlat with {len(labels)} embeddings, k={self.k}")
 
     def predict(self, embeddings: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """

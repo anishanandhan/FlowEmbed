@@ -2,17 +2,22 @@
 venv/
 .env
 
-# Data and models
+# Data — raw, processed, splits, checkpoints (too large for GitHub)
 data/raw/*
 data/processed/*
 data/splits/*
 data/checkpoints/*
+checkpoints/
 
-# Only ignore contents, keep the folder structure
+# Keep folder structure via .gitkeep
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/splits/.gitkeep
 !data/checkpoints/.gitkeep
+
+# Embeddings — binary blobs (17 MB+)
+data/embeddings/*.npy
+data/embeddings/*.bin
 
 # Models
 *.pt
@@ -26,3 +31,13 @@ __pycache__/
 
 # OS
 .DS_Store
+
+# Scratch / temp test files
+test_knn.py
+test_knn_sklearn.py
+scripts/1.
+data/bilstm_training.log
+
+# IDE
+.vscode/
+.idea/
