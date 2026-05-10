@@ -246,6 +246,11 @@ We validated our system live on a **Samsung Galaxy S23 Ultra** — generating re
 
 ---
 
+## 📊 Dataset
+The dataset used in this project is officially published on IEEE DataPort:
+[5G Network Traffic Dataset from Samsung Galaxy Mobile](https://dx.doi.org/10.21227/xxg9-ry60)
+
+
 ## 📄 License
 
 Apache License 2.0 — See [LICENSE](LICENSE)
