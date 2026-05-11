@@ -256,5 +256,3 @@ The dataset used in this project is officially published on IEEE DataPort:
 Apache License 2.0 — See [LICENSE](LICENSE)
 
 ---
-
-*Built for Samsung Ennovatex AX Hackathon by Anish Anandhan*
